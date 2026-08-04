@@ -1,6 +1,6 @@
 [package]
 name = "armature-cloudrun"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 rust-version = "1.94.1"
 authors = ["Joseph Quinn <quinn.josephr@proton.me>"]
@@ -13,10 +13,10 @@ categories = ["web-programming", "asynchronous"]
 
 [dependencies]
 # Armature core
-armature-core = { version = "0" }
+armature-core = { version = "0.8" }
 
 # GCP SDK (optional, for GCP service access)
-armature-gcp = { version = "0", optional = true }
+armature-gcp = { version = "0.2", optional = true }
 
 # Async runtime
 # "time" (per-check deadline in `health::HealthCheck::check`, accept-loop
