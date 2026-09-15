@@ -23,7 +23,7 @@ armature-gcp = { version = "0.2", optional = true }
 # backoff in `serve`), "net" (`TcpListener`) and "sync" (`RwLock`) are all used
 # by this crate but were previously only reaching it by accident, via workspace
 # feature unification.
-tokio = { version = "1.52", features = [
+tokio = { version = "1.53", features = [
     "macros",
     "rt-multi-thread",
     "signal",
@@ -33,12 +33,12 @@ tokio = { version = "1.52", features = [
 ] }
 
 # HTTP server (Cloud Run uses standard HTTP)
-hyper = { version = "1.10", features = ["server", "http1", "http2"] }
+hyper = { version = "1.11", features = ["server", "http1", "http2"] }
 hyper-util = { version = "0.1", features = ["tokio", "server", "server-auto"] }
 http-body-util = "0.1"
 
 # HTTP types
-http = "1.4"
+http = "1.5"
 bytes = "1.12"
 
 # Serialization
@@ -61,7 +61,7 @@ tracing-stackdriver = "0.10"
 
 [dev-dependencies]
 cargo-husky = { version = "1.5", default-features = false, features = ["user-hooks"] }
-tokio = { version = "1.52", features = ["rt-multi-thread", "macros", "sync", "time", "net", "io-util", "fs", "signal", "test-util"] }
+tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "sync", "time", "net", "io-util", "fs", "signal", "test-util"] }
 
 [features]
 default = []
