@@ -9,10 +9,12 @@ Earlier changes are recorded in the workspace [`CHANGELOG.md`](../CHANGELOG.md).
 
 ## [Unreleased]
 
-### Fixed
+## [0.4.0] - 2026-09-15
 
-- Health checkers run concurrently under a per-check timeout. They were awaited in sequence with no timeout, so readiness latency was the sum rather than the max and one hung checker stalled `/readyz` indefinitely — surfacing on Cloud Run as a probe timeout rather than an unhealthy result.
-- The crate's `tokio` features are declared rather than borrowed from workspace feature unification.
+### Changed
+
+- **Breaking:** requires `armature-core` 0.10 (was `0.9`); its types appear in this crate's API, so the requirement change is breaking here and the minor moves. Part of the `armature-core` 0.10 release train.
+- Dependencies bumped to their latest releases: `http` 1.4 → 1.5, `hyper` 1.10 → 1.11, `tokio` 1.52 → 1.53, `tokio` 1.52 → 1.53.
 
 ## [0.3.0] - 2026-08-05
 
