@@ -9,6 +9,8 @@ Earlier changes are recorded in the workspace [`CHANGELOG.md`](../CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-17
+
 ### Security
 
 - The metadata-server client is built with `.no_proxy()` (an ambient
