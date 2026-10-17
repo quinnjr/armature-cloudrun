@@ -39,12 +39,9 @@ impl InstanceMetadata {
     /// Exposed (crate-internal) so tests can point at an unreachable or stub
     /// address instead of the live metadata server.
     pub(crate) async fn fetch_from(base: &str) -> Result<Self, crate::CloudRunError> {
-        let client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(5))
-            .build()
-            .map_err(|e| {
-                crate::CloudRunError::Metadata(format!("failed to build HTTP client: {e}"))
-            })?;
+        let client = metadata_client_builder().build().map_err(|e| {
+            crate::CloudRunError::Metadata(format!("failed to build HTTP client: {e}"))
+        })?;
 
         // A single field lookup. A transport error (server unreachable) is a
         // hard error; a non-success status (field absent) degrades to `None`.
@@ -122,6 +119,22 @@ impl InstanceMetadata {
             region: std::env::var("GOOGLE_CLOUD_REGION").ok(),
         }
     }
+}
+
+/// HTTP client settings for the metadata server.
+///
+/// - `.no_proxy()`: the metadata server is link-local and must be reached
+///   directly. reqwest otherwise honours `HTTP_PROXY`/`HTTPS_PROXY` from the
+///   environment, which would hand every `Metadata-Flavor: Google` request —
+///   and the service-account identity it returns — to whatever proxy the
+///   container happens to be configured with.
+/// - No redirects: the metadata server never redirects, and following one
+///   would replay the `Metadata-Flavor` header to another host.
+fn metadata_client_builder() -> reqwest::ClientBuilder {
+    reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .no_proxy()
+        .redirect(reqwest::redirect::Policy::none())
 }
 
 /// Derive the Cloud Run region from a GCE `instance/zone` value.
@@ -290,5 +303,49 @@ mod tests {
         assert!(md.project_id.is_none());
         assert!(md.project_number.is_none());
         assert!(md.service_account.is_none());
+    }
+
+    #[tokio::test]
+    async fn metadata_redirects_are_not_followed() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        // A stub that answers every request with a redirect; if the client
+        // followed it, the second request would arrive at `/followed`.
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let seen = std::sync::Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
+        let seen_srv = seen.clone();
+        tokio::spawn(async move {
+            loop {
+                let Ok((mut sock, _)) = listener.accept().await else {
+                    return;
+                };
+                let seen = seen_srv.clone();
+                tokio::spawn(async move {
+                    let mut buf = vec![0u8; 4096];
+                    let n = sock.read(&mut buf).await.unwrap_or(0);
+                    let req = String::from_utf8_lossy(&buf[..n]).to_string();
+                    seen.lock()
+                        .unwrap()
+                        .push(req.lines().next().unwrap_or("").to_string());
+                    let resp = format!(
+                        "HTTP/1.1 302 Found\r\nLocation: http://{addr}/followed\r\n\
+                         Content-Length: 0\r\nConnection: close\r\n\r\n"
+                    );
+                    let _ = sock.write_all(resp.as_bytes()).await;
+                });
+            }
+        });
+
+        let result = InstanceMetadata::fetch_from(&format!("http://{addr}/")).await;
+        assert!(result.is_err(), "a 302 must not be treated as success");
+        assert!(
+            seen.lock()
+                .unwrap()
+                .iter()
+                .all(|line| !line.contains("/followed")),
+            "redirect was followed: {:?}",
+            seen.lock().unwrap()
+        );
     }
 }

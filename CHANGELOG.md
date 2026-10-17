@@ -9,6 +9,15 @@ Earlier changes are recorded in the workspace [`CHANGELOG.md`](../CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-17
+
+### Security
+
+- The metadata-server client is built with `.no_proxy()` (an ambient
+  `HTTP(S)_PROXY` received `Metadata-Flavor: Google` requests and their
+  service-account answers) and never follows redirects (which would replay the
+  `Metadata-Flavor` header to another host) (L19).
+
 ## [0.4.0] - 2026-09-15
 
 ### Changed
